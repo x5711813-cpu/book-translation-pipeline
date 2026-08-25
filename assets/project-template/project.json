@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "source": {"path": "", "format": "auto"},
+  "target": {"language": "zh-CN", "title": "", "author": "", "output": "output/book-zh.epub"},
+  "model": {
+    "base_url": "http://127.0.0.1:11434",
+    "name": "",
+    "temperature": 0.1,
+    "context_tokens": 16384,
+    "max_output_tokens": 4096
+  },
+  "ocr": {
+    "provider": "rapidocr",
+    "python": "",
+    "confidence_threshold": 0.9,
+    "render_scale": 4.0,
+    "cache": true
+  },
+  "workflow": {"pilot_pages": 20, "max_revisions": 2},
+  "terminology": {},
+  "sections": []
+}

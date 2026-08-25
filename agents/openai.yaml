@@ -1,0 +1,7 @@
+interface:
+  display_name: "图书翻译出版流水线"
+  short_description: "将 PDF、扫描件或 EPUB 翻译、审校并制作成中文 EPUB"
+  default_prompt: "使用 $book-translation-pipeline 将这本书分批翻译、审校并制作成中文 EPUB。"
+
+policy:
+  allow_implicit_invocation: true
