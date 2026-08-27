@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import argparse
+import json
 import posixpath
 import re
 import zipfile
 from pathlib import Path
 from xml.etree import ElementTree as ET
 
-from common import load_project, read_json, read_jsonl, sha256_file, write_json
+from common import load_project, read_json, read_jsonl, sha256_file, sha256_text, write_json
+from translate_blocks import (KIND_POLICIES, REVIEW, SYSTEM, configured_model,
+                              context_package, load_approved_blocks, load_knowledge)
 
 
 CONTAMINATION = re.compile(r"<think>|</think>|作为AI|我无法翻译|system prompt|```", re.I)
@@ -55,7 +58,12 @@ def main() -> None:
         source = Path(config["source"]["path"])
         if source.exists() and sha256_file(source) != manifest.get("source_sha256"):
             errors.append("Source hash changed after extraction")
-    blocks = read_jsonl(project_dir / "source" / "blocks.jsonl")
+    try:
+        blocks, source_revision = load_approved_blocks(project_dir, config)
+    except (FileNotFoundError, ValueError, KeyError) as error:
+        errors.append(f"Source approval invalid: {error}")
+        blocks = read_jsonl(project_dir / "source" / "blocks.jsonl")
+        source_revision = "invalid"
     ids = [item.get("block_id") for item in blocks]
     if len(ids) != len(set(ids)):
         errors.append("Duplicate block IDs")
@@ -64,7 +72,33 @@ def main() -> None:
         errors.append(f"Unresolved source boundaries: {len(unresolved)}")
     translations = {item["block_id"]: item for item in read_jsonl(project_dir / "translations" / "translations.jsonl")}
     missing = [item["block_id"] for item in blocks if item.get("boundary_status") == "READY" and item["block_id"] not in translations]
-    stale = [item["block_id"] for item in blocks if item["block_id"] in translations and translations[item["block_id"]].get("source_sha256") != item.get("source_sha256")]
+    knowledge, knowledge_hash = load_knowledge(project_dir, config)
+    translator = configured_model(config, "translator")
+    reviewer_model = configured_model(config, "reviewer")
+    translator_hash = sha256_text(json.dumps(translator, sort_keys=True))
+    reviewer_hash = sha256_text(json.dumps(reviewer_model, sort_keys=True))
+    review_prompt_hash = sha256_text(REVIEW)
+    stale = []
+    for index, block in enumerate(blocks):
+        record = translations.get(block["block_id"])
+        if not record:
+            continue
+        kind = block.get("kind", "prose")
+        prompt_hash = sha256_text(SYSTEM + "\nBLOCK POLICY: " + KIND_POLICIES.get(kind, KIND_POLICIES["prose"]))
+        package = context_package(blocks, index, translations, source_revision, knowledge, config)
+        context_hash = sha256_text(json.dumps(package, ensure_ascii=False, sort_keys=True))
+        expected = {
+            "source_sha256": block.get("source_sha256"),
+            "source_revision": source_revision,
+            "context_sha256": context_hash,
+            "knowledge_sha256": knowledge_hash,
+            "model_config_sha256": translator_hash,
+            "reviewer_model_config_sha256": reviewer_hash,
+            "prompt_sha256": prompt_hash,
+            "review_prompt_sha256": review_prompt_hash,
+        }
+        if any(record.get(key) != value for key, value in expected.items()):
+            stale.append(block["block_id"])
     review = [key for key, item in translations.items() if item.get("status") != "PASS"]
     contaminated = [key for key, item in translations.items() if CONTAMINATION.search(item.get("translation", ""))]
     if missing:
@@ -88,7 +122,7 @@ def main() -> None:
         "status": "PASS" if not errors else "INCOMPLETE",
         "errors": errors,
         "warnings": warnings,
-        "source_format": manifest.get("detected_format"),
+        "source_format": manifest.get("detected_format"), "source_revision": source_revision,
         "blocks": len(blocks), "translations": len(translations), "visuals": len(visuals),
         "epub": str(output) if output.exists() else None,
         "epub_sha256": sha256_file(output) if output.exists() else None,

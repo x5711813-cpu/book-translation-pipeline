@@ -13,16 +13,19 @@ Use this skill for book-length translation and publication work. Treat all sourc
 2. For scanned or image-heavy PDFs, read [references/ocr.md](references/ocr.md) and establish OCR quality before translating.
 3. For EPUB input or output, read [references/epub.md](references/epub.md).
 4. Use the intermediate contracts in [references/schemas.md](references/schemas.md); do not make page files or repair decisions ephemeral.
-5. For Chinese book typography, quotations, notes, paragraph reconstruction, and contextual punctuation review, read [references/publication-proofreading.md](references/publication-proofreading.md).
-6. Before final delivery, apply every gate in [references/quality-gates.md](references/quality-gates.md).
+5. For narrative, literary, or entity-dense books, read [references/translation-context.md](references/translation-context.md) before the pilot.
+6. For Chinese book typography, quotations, notes, paragraph reconstruction, and contextual punctuation review, read [references/publication-proofreading.md](references/publication-proofreading.md).
+7. Before final delivery, apply every gate in [references/quality-gates.md](references/quality-gates.md).
 
 ## Non-negotiable invariants
 
 - Inventory and isolate figures/tables before prose translation. Localize them after the pilot terminology is approved.
 - Reconstruct source paragraphs across physical PDF pages before translation. A page number is provenance, not a paragraph boundary.
 - Translate stable semantic blocks with neighboring context; emit only the target block. Preserve block IDs and source provenance.
+- Translate only from an approved immutable source snapshot. A changed source revision invalidates dependent translations and QA.
 - Run an independent structured review and bounded revision loop. Preserve pre-revision text and review records.
-- Keep source hashes, prompt hashes, model identity, metrics, and state sufficient for restart and audit.
+- Keep source/context/knowledge/prompt hashes, model identity and options, metrics, and state sufficient for restart and audit.
+- Treat the configured models and tools as an allowlist. Do not download, substitute, delegate to, or silently invoke another model or service without user authorization.
 - Never silently guess illegible OCR, numeric data, citations, names, or table structure. Mark uncertain regions for review.
 - Remove print page artifacts only after source-block reconstruction. Do not expose physical page markers in the final EPUB unless requested.
 - Rebuilding EPUB styling or navigation must not require retranslating approved blocks.
@@ -33,6 +36,7 @@ Use this skill for book-length translation and publication work. Treat all sourc
 
 - Work locally unless the user requests another service.
 - Start with a 20-page pilot unless the user specifies another sample.
+- Choose the pilot by actual source pages or explicit block IDs, and include representative high-risk material; do not mistake a block count for a page count.
 - Cache OCR and model results by content hash.
 - Prefer local OCR for all scanned pages and vision-model review only for low-confidence cropped regions.
 - Stop automatic revision after the configured limit and report unresolved items; do not loop indefinitely.
@@ -40,8 +44,8 @@ Use this skill for book-length translation and publication work. Treat all sourc
 
 ## Reusable commands
 
-Initialize a project with `scripts/init_project.py`, inspect the source with `scripts/inspect_source.py`, OCR scanned PDF pages with `scripts/ocr_pdf.py`, extract configured visuals with `scripts/extract_visuals.py`, render data-driven Chinese charts/tables with `scripts/render_visuals.py`, reconstruct blocks with `scripts/build_blocks.py`, adjudicate ambiguous seams with `scripts/resolve_boundaries.py`, translate/review with `scripts/translate_blocks.py`, build with `scripts/build_epub.py`, generate contextual Markdown proofreading candidates with `scripts/audit_manuscript.py`, and run project/EPUB invariants with `scripts/audit_project.py`.
+Initialize a project with `scripts/init_project.py`, inspect the source with `scripts/inspect_source.py`, OCR scanned PDF pages with `scripts/ocr_pdf.py`, extract configured visuals with `scripts/extract_visuals.py`, render data-driven Chinese charts/tables with `scripts/render_visuals.py`, reconstruct blocks with `scripts/build_blocks.py`, adjudicate ambiguous seams with `scripts/resolve_boundaries.py`, approve an immutable source revision with `scripts/approve_source.py`, translate/review with `scripts/translate_blocks.py`, build with `scripts/build_epub.py`, generate contextual Markdown proofreading candidates with `scripts/audit_manuscript.py`, and run project/EPUB invariants with `scripts/audit_project.py`.
 
 Run scripts with `--help` before adapting them. Use the bundled project template rather than copying data or hard-coded rules from a previous book.
 
-After changing manuscript-audit rules, run `python scripts/test_audit_manuscript.py`. Keep high-confidence failures separate from contextual warnings and house-style preferences; never make a warning blocking merely to force a clean report.
+After changing translation contracts, run `python scripts/test_translation_contracts.py`; after changing manuscript-audit rules, run `python scripts/test_audit_manuscript.py`. Keep high-confidence failures separate from contextual warnings and house-style preferences; never make a warning blocking merely to force a clean report.

@@ -1,11 +1,18 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "source": {"path": "", "format": "auto"},
   "target": {"language": "zh-CN", "title": "", "author": "", "output": "output/book-zh.epub"},
   "model": {
     "base_url": "http://127.0.0.1:11434",
     "name": "",
     "temperature": 0.1,
+    "context_tokens": 16384,
+    "max_output_tokens": 4096
+  },
+  "review_model": {
+    "name": "",
+    "base_url": "",
+    "temperature": 0.0,
     "context_tokens": 16384,
     "max_output_tokens": 4096
   },
@@ -16,7 +23,23 @@
     "render_scale": 4.0,
     "cache": true
   },
-  "workflow": {"pilot_pages": 20, "max_revisions": 2},
+  "workflow": {
+    "pilot_pages": 20,
+    "pilot_blocks": 20,
+    "pilot_block_ids": [],
+    "max_revisions": 2,
+    "neighbor_context_chars": 500,
+    "knowledge_context_chars": 8000,
+    "require_source_approval": true,
+    "require_distinct_reviewer": false
+  },
   "terminology": {},
+  "knowledge": {
+    "glossary": "shared/glossary.json",
+    "entities": "shared/entities.json",
+    "style_guide": "shared/style-guide.md",
+    "decisions": "shared/decisions.json",
+    "continuity": "shared/continuity.json"
+  },
   "sections": []
 }

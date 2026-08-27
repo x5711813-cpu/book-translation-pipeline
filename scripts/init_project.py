@@ -10,7 +10,7 @@ from common import write_json
 
 
 DIRECTORIES = [
-    "source/pages", "source/images", "source/epub", "sections", "translations",
+    "source/pages", "source/images", "source/epub", "source/approved", "shared", "sections", "translations",
     "assembled/chapters", "repairs", "visuals/originals", "visuals/localized", "output", "reports",
 ]
 
@@ -36,6 +36,7 @@ def main() -> None:
     parser.add_argument("--title", default="")
     parser.add_argument("--author", default="")
     parser.add_argument("--model", default="")
+    parser.add_argument("--review-model", default="")
     parser.add_argument("--base-url", default="http://127.0.0.1:11434")
     parser.add_argument("--ocr-python", default=default_ocr_python())
     parser.add_argument("--force", action="store_true")
@@ -56,6 +57,7 @@ def main() -> None:
     config["target"]["author"] = args.author
     config["model"]["name"] = args.model
     config["model"]["base_url"] = args.base_url.rstrip("/")
+    config["review_model"]["name"] = args.review_model
     config["ocr"]["python"] = args.ocr_python
     for name in DIRECTORIES:
         (project / name).mkdir(parents=True, exist_ok=True)
@@ -63,6 +65,15 @@ def main() -> None:
     write_json(project / "visuals" / "visuals.json", {"visuals": []})
     write_json(project / "repairs" / "boundary-decisions.json", {"decisions": {}})
     write_json(project / "repairs" / "boundary-rewrites.json", {"rewrites": {}})
+    write_json(project / "shared" / "glossary.json", {"version": 1, "entries": []})
+    write_json(project / "shared" / "entities.json", {"version": 1, "entities": []})
+    write_json(project / "shared" / "decisions.json", {"version": 1, "decisions": []})
+    write_json(project / "shared" / "continuity.json", {"version": 1, "sections": {}})
+    (project / "shared" / "style-guide.md").write_text(
+        "# Project translation style guide\n\n"
+        "Record approved audience, register, language-pair decisions, narrative perspective, dialogue, terminology, and content-type rules here.\n",
+        encoding="utf-8",
+    )
     stylesheet = Path(__file__).parent.parent / "assets" / "epub-template" / "stylesheet.css"
     shutil.copy2(stylesheet, project / "output" / "stylesheet.css")
     print(config_path)

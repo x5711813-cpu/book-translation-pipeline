@@ -5,6 +5,7 @@ The final status is `PASS` only when every applicable blocking gate passes.
 ## Source and OCR
 
 - Source hash and detected format recorded; all planned pages/spine items accounted for.
+- Translation input is an immutable approved source revision; its blocks hash and source manifest hash match the approval record.
 - OCR confidence, low-confidence regions, suspicious line gaps, and text-region coverage recorded; high confidence alone is not a completeness guarantee.
 - Multi-column order, notes, rotated pages, and table regions checked.
 - No blocking illegible text or guessed numeric/tabular content.
@@ -20,12 +21,20 @@ The final status is `PASS` only when every applicable blocking gate passes.
 
 ## Translation
 
-- Every required block has a current translation matching its source hash.
-- Independent review passed or unresolved issues are disclosed.
+- Every required block has a current translation matching its approved source revision, source hash, exact context hash, knowledge hash, model options, and prompt hashes.
+- Review passed or unresolved issues are disclosed; reports distinguish model-independent review from prompt-only isolation.
 - No prompt, reasoning, refusal, or code-fence contamination.
-- Numbers, dates, citations, note markers, names, and glossary terms checked.
+- Numbers, dates, citations, note markers, names/entities, pronouns, and glossary terms checked.
 - No untranslated source-language prose, raw tags, replacement/zero-width characters, OCR/page-label debris, or unexplained ellipses remain.
 - Every accepted external-review correction is source-adjudicated and replayable; the old bad pattern is absent from the rebuilt output.
+- The full bounded revision chain is retained, and no configured model or tool was silently substituted or downloaded.
+
+## Pilot and knowledge baseline
+
+- Pilot scope is recorded as actual pages or explicit block IDs and includes representative project risks.
+- Confirmed omission, addition, reversal, entity/pronoun, terminology, numeric, structural, and style issues are recorded against project acceptance thresholds.
+- Glossary, entity, style, decision, and continuity versions used for production are recorded; unresolved proposals are not treated as approved facts.
+- Ambiguous entities or conditional translations retain evidence and scope rather than being forced into a global replacement.
 
 ## Chinese publication text
 

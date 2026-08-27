@@ -4,11 +4,13 @@ Use UTF-8. Write JSON atomically and JSONL one object per line. Stable IDs must 
 
 ## Project configuration
 
-`project.json` owns book-specific choices: source path/format, target metadata, model endpoint/name/options, OCR backend/interpreter/thresholds, pilot size, revision limit, terminology, sections, and output name.
+`project.json` owns book-specific choices: source path/format, target metadata, translator and optional reviewer model/options, OCR backend/interpreter/thresholds, pilot selection, revision limit, knowledge files, sections, and output name. Configured models and tools are the project allowlist; adding or substituting one requires user authorization.
 
 ## Source manifest
 
 `source/source-manifest.json` records source SHA-256, detected format, page or spine counts, extraction quality, encryption flags, and tool versions.
+
+`source/approved/rNNN/approval.json` records the immutable `source_revision`, blocks-file SHA-256, block count, approval time, and source manifest hash. Its adjacent `blocks.jsonl` is the only valid translation input for that revision. Editing working blocks requires a new approved revision; never rewrite an approved directory.
 
 ## Semantic block
 
@@ -34,13 +36,26 @@ For EPUB input, provenance uses `href` and a stable node locator instead of page
   "translation": "完整译文",
   "status": "PASS",
   "source_sha256": "...",
+  "source_revision": "r001",
   "cache_key": "...",
   "model": "local-model",
   "prompt_sha256": "...",
-  "review": {"status": "PASS", "issues": [], "missing": ""},
+  "context_sha256": "...",
+  "knowledge_sha256": "...",
+  "reviewer_model": "review-model",
+  "review_prompt_sha256": "...",
+  "review_independence": "model or prompt-only",
+  "review": {"status": "PASS", "issues": []},
+  "revisions": [],
   "metrics": {"seconds": 12.1, "prompt_tokens": 900, "output_tokens": 420}
 }
 ```
+
+## Shared knowledge
+
+`shared/glossary.json`, `shared/entities.json`, `shared/decisions.json`, `shared/continuity.json`, and `shared/style-guide.md` are project-specific, versioned inputs. Proposed model output must remain distinguishable from approved entries. Conditional translations need context and evidence; forbidden variants and affected blocks support deterministic back-scans.
+
+The exact selected subset sent with a block is its context package. Store its SHA-256 rather than assuming that a stable target block implies stable context.
 
 ## Boundary and visual records
 
