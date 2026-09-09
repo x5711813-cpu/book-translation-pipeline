@@ -1,5 +1,7 @@
 # Workflow
 
+This is the translation workflow. For an existing ebook that only needs proofreading, a TOC, or formatting, use [ebook-maintenance.md](ebook-maintenance.md) instead; do not require a translation pilot or regenerate approved translations.
+
 ## 1. Preflight and input routing
 
 Create a project, hash the source, and inspect its structure. Classify it as `pdf-text`, `pdf-scan`, `pdf-mixed`, `epub-reflowable`, or `epub-fixed`. Inventory chapters, notes, bibliography, index, figures, tables, maps, rotated pages, multi-column pages, and blank/front-matter pages. Record decisions in project files.

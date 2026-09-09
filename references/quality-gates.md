@@ -2,6 +2,8 @@
 
 The final status is `PASS` only when every applicable blocking gate passes.
 
+For standalone ebook maintenance, translation source-approval, OCR, pilot, model, and localization gates are inapplicable unless that work was requested. Apply content-review gates for proofreading, and structure/navigation/rendering gates for TOC or layout work. Without the original-language source, label translation fidelity unverified. `BASIC_CHECKS_PASS` from `ebook_tool.py` is not publication `PASS`.
+
 ## Source and OCR
 
 - Source hash and detected format recorded; all planned pages/spine items accounted for.
@@ -65,3 +67,5 @@ The final status is `PASS` only when every applicable blocking gate passes.
 - Representative pages and every unusual layout class are visually inspected.
 - The final Markdown/EPUB artifacts—not an earlier build—match the delivered audit hashes.
 - Build report and SHA-256 are delivered.
+- For TOC/reflow-only changes, input and output body text, reading order, notes, and original resources match except for documented navigation/anchor/style changes. Check hierarchical TOC targets and any retained NCX together; keep existing page-list and landmarks functional.
+- Typography works at narrow/wide viewport and enlarged text without hiding content; fixed-layout input was not converted by merely changing metadata or adding CSS. Record EPUBCheck and rendered checks as executed or not executed, with actual results.

@@ -1,0 +1,16 @@
+/* Copy to the project and adapt selectors to the book's semantic classes. */
+body { margin: 5%; line-height: 1.75; }
+h1, h2, h3, h4, h5, h6 { line-height: 1.35; break-after: avoid; page-break-after: avoid; }
+p { margin-block: 0.6em; orphans: 2; widows: 2; }
+/* Only paragraphs explicitly identified as prose receive indentation. */
+p.prose { text-indent: 2em; }
+blockquote, .epigraph { margin: 1em 1.5em; }
+blockquote p, .no-indent, .caption, figcaption, .notes p, li p { text-indent: 0; }
+img, svg { max-width: 100%; height: auto; }
+figure { margin: 1em 0; text-align: center; }
+figcaption { font-size: 0.9em; line-height: 1.5; }
+table { max-width: 100%; border-collapse: collapse; }
+th, td { padding: 0.3em; vertical-align: top; }
+pre { white-space: pre-wrap; overflow-wrap: break-word; }
+.poetry { white-space: pre-wrap; text-indent: 0; }
+.index-entry { text-align: start; text-indent: 0; }

@@ -2,6 +2,8 @@
 
 面向整本书翻译、审校与 EPUB 交付的 Codex 技能。支持文本 PDF、扫描 PDF 与 EPUB，强调可恢复处理、段落重建、注释和索引完整性、中文出版校对以及可审计的本地模型工作流。
 
+也支持对已有电子书独立执行**校对、分级目录生成/修复、格式重排**，无需重跑翻译。使用方法与边界见 [电子书整理流程](references/ebook-maintenance.md)。例如：“校对这本 EPUB，修复目录并统一正文和脚注排版。”
+
 ## 安装
 
 将本仓库复制到 Codex 技能目录：
@@ -29,6 +31,7 @@ Copy-Item -Recurse -Force book-translation-pipeline "$env:USERPROFILE\.codex\ski
 
 ```powershell
 python scripts/test_audit_manuscript.py
+python scripts/test_ebook_tool.py
 python scripts/audit_manuscript.py --help
 python path\to\skill-creator\scripts\quick_validate.py .
 ```
@@ -38,4 +41,3 @@ python path\to\skill-creator\scripts\quick_validate.py .
 ## 设计来源
 
 中文校对检查器的分级诊断、Markdown 受保护区域、严格模式和回归测试思路，概念上参考了 MIT 许可的 [Tech-Doc-Style-Chinese](https://github.com/Fenng/tech-doc-style-chinese)。技术文档特有的引号与中西文空格规则没有直接移植；本技能采用中文译著的出版体例。
-
