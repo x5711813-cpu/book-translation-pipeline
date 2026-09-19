@@ -147,6 +147,7 @@ def main() -> None:
             if decision == "REVIEW" and args.accept_ambiguous_splits:
                 decision, reason = "SPLIT", "ambiguous boundary accepted as split by operator"
             decisions[key] = {
+                **saved,
                 "decision": decision, "reason": reason, "left_page": page_no - 1, "right_page": page_no,
                 "left_tail": current["source"][-700:], "right_head": parts[0][:700],
             }
@@ -178,6 +179,11 @@ def main() -> None:
         block["kind"] = kind
         safe_section = re.sub(r"[^a-z0-9-]+", "-", section.lower()).strip("-") or "book"
         block["block_id"] = f"{safe_section}-block-{index:06d}"
+
+    if config.get("sections"):
+        unassigned = sum(block["section"] == "unassigned" for block in blocks)
+        if unassigned:
+            print(f"WARN {unassigned} blocks unmatched by section page ranges; configure start_page/end_page before approval")
 
     write_jsonl(project_dir / "source" / "blocks.jsonl", blocks)
     write_json(project_dir / "repairs" / "boundary-decisions.json", {

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import datetime as dt
 import html
 import mimetypes
@@ -51,13 +52,35 @@ def main() -> None:
     blocks = read_jsonl(project_dir / "source" / "blocks.jsonl")
     translations = {item["block_id"]: item for item in read_jsonl(project_dir / "translations" / "translations.jsonl")}
     missing = [block["block_id"] for block in blocks if block.get("boundary_status") == "READY" and block["block_id"] not in translations]
-    review = [key for key, item in translations.items() if item.get("status") != "PASS"]
+    current_ids = {block["block_id"] for block in blocks}
+    orphan_ids = sorted(set(translations) - current_ids)
+    if orphan_ids:
+        print(f"WARN Historical translation rows outside current source: {len(orphan_ids)} (retained)")
+    review = [key for key, item in translations.items() if key in current_ids and item.get("status") != "PASS"]
     if missing:
         raise RuntimeError(f"Missing translations: {missing[:20]}")
     if review and not args.allow_review:
         raise RuntimeError(f"Translations still need review: {review[:20]}")
 
     configured = config.get("sections") or [{"slug": "book", "label": config["target"].get("title") or "译文", "block_ids": [b["block_id"] for b in blocks]}]
+    chapter_blocks = []
+    for section in configured:
+        ids = section.get("block_ids")
+        if ids is None:
+            ids = [b["block_id"] for b in blocks if b.get("section") == section.get("source_section", section["slug"])]
+        selected_ids = set(ids)
+        unknown = selected_ids - current_ids
+        if unknown:
+            raise ValueError(f"Unknown block IDs in section {section['slug']}: {sorted(unknown)}")
+        selected = [b for b in blocks if b["block_id"] in selected_ids]
+        if not selected:
+            raise ValueError(f"Empty section: {section['slug']}; check page ranges, source_section or block_ids")
+        chapter_blocks.append(selected)
+    counts = Counter(b["block_id"] for selected in chapter_blocks for b in selected)
+    omitted = sorted(current_ids - set(counts))
+    duplicated = sorted(key for key, count in counts.items() if count > 1)
+    if omitted or duplicated:
+        raise ValueError(f"Invalid chapter coverage: omitted={omitted}, duplicated={duplicated}")
     chapter_files = []
     block_chapter: dict[str, str] = {}
     files: dict[str, str | bytes] = {}
@@ -65,9 +88,7 @@ def main() -> None:
     visuals_after = {}
     for visual in visual_data:
         visuals_after.setdefault(visual.get("placement_after_block"), []).append(visual)
-    for section in configured:
-        ids = section.get("block_ids") or [b["block_id"] for b in blocks if b.get("section") == section.get("source_section")]
-        selected = [b for b in blocks if b["block_id"] in set(ids)]
+    for section, selected in zip(configured, chapter_blocks):
         for block in selected:
             block_chapter[block["block_id"]] = section["slug"]
         body = [f'<h1>{html.escape(section["label"])}</h1>']
@@ -122,7 +143,7 @@ def main() -> None:
         archive.writestr("mimetype", "application/epub+zip", compress_type=zipfile.ZIP_STORED)
         for name, value in files.items():
             archive.writestr(name, value.encode("utf-8") if isinstance(value, str) else value, compress_type=zipfile.ZIP_DEFLATED)
-    write_json(output.with_suffix(".build.json"), {"status": "PASS", "epub": str(output), "sha256": sha256_file(output), "chapters": len(chapter_files), "visuals": len(visual_data)})
+    write_json(output.with_suffix(".build.json"), {"status": "PASS", "epub": str(output), "sha256": sha256_file(output), "chapters": len(chapter_files), "visuals": len(visual_data), "orphan_translation_ids": orphan_ids})
     print(output)
 
 

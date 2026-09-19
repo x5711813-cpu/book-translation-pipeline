@@ -71,6 +71,11 @@ def main() -> None:
     if unresolved:
         errors.append(f"Unresolved source boundaries: {len(unresolved)}")
     translations = {item["block_id"]: item for item in read_jsonl(project_dir / "translations" / "translations.jsonl")}
+    current_ids = set(ids)
+    orphan_ids = sorted(set(translations) - current_ids)
+    if orphan_ids:
+        warnings.append(f"Historical translation rows outside current source: {len(orphan_ids)} (retained)")
+    translations = {key: item for key, item in translations.items() if key in current_ids}
     missing = [item["block_id"] for item in blocks if item.get("boundary_status") == "READY" and item["block_id"] not in translations]
     knowledge, knowledge_hash = load_knowledge(project_dir, config)
     translator = configured_model(config, "translator")
@@ -122,6 +127,7 @@ def main() -> None:
         "status": "PASS" if not errors else "INCOMPLETE",
         "errors": errors,
         "warnings": warnings,
+        "orphan_translation_ids": orphan_ids,
         "source_format": manifest.get("detected_format"), "source_revision": source_revision,
         "blocks": len(blocks), "translations": len(translations), "visuals": len(visuals),
         "epub": str(output) if output.exists() else None,

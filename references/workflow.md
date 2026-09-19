@@ -16,6 +16,18 @@ Extract pages with source coordinates where available. Remove repeated running-h
 
 Use deterministic boundary rules first. Ask the configured model only about ambiguous boundaries. Preserve its decision and reasoning as structured data. After structural and completeness review, freeze the blocks with `scripts/approve_source.py`. Translate only from that immutable revision and only after no blocking source boundary remains. The completeness audit should not reuse the extractor's filtering and ordering logic wholesale; otherwise both paths can omit the same material.
 
+Before reconstruction, configure `sections` using [schemas.md](schemas.md#sections). Resolve unmatched page ranges before approving the source.
+
+For offline/manual review, list ambiguous boundaries with `python scripts/resolve_boundaries.py <project> --dry-run`, inspect the original pages, then record an evidence-based decision:
+
+```text
+python scripts/resolve_boundaries.py <project> --decide page-0001-to-0002=SPLIT --reason "Original page shows a new paragraph"
+python scripts/build_blocks.py <project>
+python scripts/approve_source.py <project>
+```
+
+`--decide KEY=JOIN|SPLIT` can be repeated; `--reason` is required and applies to those decisions. All keys are validated before writing. Add `--dry-run` to preview without changes. Manual mode needs no model and does not process other pending boundaries. Decisions retain `method: manual` and their evidence after rebuilding. A model run also retains its method and timing. With no pending boundaries, the resolver exits successfully without requiring a model. The existing `build_blocks.py --accept-ambiguous-splits` is a bulk split override, suitable only after verifying that all pending seams should be split.
+
 ## 4. Knowledge baseline and pilot
 
 Create versioned project knowledge under `shared/`: glossary, entities, style guide, decisions, and bounded continuity summaries. Treat model-extracted terms and identities as proposals until source-checked. For narrative or entity-dense books, read [translation-context.md](translation-context.md).
