@@ -8,10 +8,25 @@ import tempfile
 import unittest
 import zipfile
 
-from ebook_tool import Book, H, E, N, O, audit, content, nodes, outline, rewrite
+from ebook_tool import Book, H, E, N, O, audit, content, nodes, outline, outline_warnings, rewrite
 
 
 class EbookTests(unittest.TestCase):
+    def test_semantic_outline_regressions(self):
+        def entry(label, level, index):
+            return dict(label=label, level=level, file='chapter.xhtml', heading_index=index)
+        bad = [entry('第 7 章 梯度', 1, 0), entry('7.4 反向传播', 2, 1),
+               entry('7.4.1 算法', 2, 2), entry('forward pass → # 前向传播', 1, 3),
+               entry('7.5.1 初始化', 3, 4)]
+        before = json.dumps(bad)
+        codes = {f['code'] for f in outline_warnings(bad)}
+        self.assertEqual(codes, {'numbered-heading-level-review', 'possible-code-comment-heading',
+                                'multiple-top-level-headings-review', 'numbered-heading-parent-review'})
+        self.assertEqual(json.dumps(bad), before)
+        good = [entry('第 7 章 梯度', 1, 0), entry('7.4 反向传播', 2, 1),
+                entry('7.4.1 算法', 3, 2), entry('注释', 2, 3)]
+        self.assertEqual(outline_warnings(good), [])
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

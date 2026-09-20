@@ -7,6 +7,7 @@ import datetime as dt
 import hashlib
 import json
 import posixpath
+import re
 from pathlib import Path
 from urllib.parse import quote, unquote, urlsplit
 from xml.dom import minidom as DOM
@@ -197,6 +198,36 @@ def audit(book):
             "scope": "Basic XML, manifest/spine and href/src/fragment checks; not EPUBCheck, textual proofreading or visual QA."}
 
 
+def outline_warnings(entries):
+    """Flag semantic candidates; never silently drop or reparent book content."""
+    findings = []
+    roots, parents = {}, {}
+    for entry in entries:
+        name, label, level = entry['file'], entry['label'], entry['level']
+        def warn(code):
+            findings.append(dict(code=code, file=name, heading_index=entry['heading_index'], label=label))
+        if re.search(r'→\s*#|\b(forward pass|backward pass|zero the parameter gradients)\b', label, re.I):
+            warn('possible-code-comment-heading')
+        if level == 1:
+            if name in roots:
+                warn('multiple-top-level-headings-review')
+            roots[name] = label
+        match = re.match(r'^((?:\d+|[A-Z])(?:\.\d+)+)\s', label)
+        if match:
+            number = match.group(1)
+            depth = number.count('.') + 1
+            # Advisory: books may have a part/chapter offset or a custom scheme.
+            if level != depth:
+                warn('numbered-heading-level-review')
+            if depth > 2 and parents.get((name, depth - 1)) != number.rsplit('.', 1)[0]:
+                warn('numbered-heading-parent-review')
+            parents[name, depth] = number
+            for key in list(parents):
+                if key[0] == name and key[1] > depth:
+                    del parents[key]
+    return findings
+
+
 def outline(book):
     entries, levels = [], []
     for name in book.reading_files():
@@ -215,7 +246,8 @@ def outline(book):
             levels.append(raw_level)
             entries.append(dict(label=label, level=len(levels), source_level=raw_level, file=name,
                                 heading_index=index, anchor=node.getAttribute("id")))
-    return {"source_sha256": book.sha256, "entries": entries}
+    return {"source_sha256": book.sha256, "entries": entries,
+            "warnings": outline_warnings(entries), "status": "CANDIDATES_REQUIRE_REVIEW"}
 
 
 def checked_entries(book, plan):

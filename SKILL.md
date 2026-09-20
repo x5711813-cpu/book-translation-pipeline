@@ -17,9 +17,12 @@ Existing ebooks can be proofread, have their TOC rebuilt, or be reformatted with
 4. For translation projects, use the intermediate contracts in [references/schemas.md](references/schemas.md); do not make page files or repair decisions ephemeral. Standalone ebook maintenance uses its own source hash, outline, styles, and correction records without requiring translation caches.
 5. For narrative, literary, or entity-dense books, read [references/translation-context.md](references/translation-context.md) before the pilot.
 6. For Chinese book typography, quotations, notes, paragraph reconstruction, and contextual punctuation review, read [references/publication-proofreading.md](references/publication-proofreading.md).
-7. Before final delivery, apply the relevant gates in [references/quality-gates.md](references/quality-gates.md). Mark translation/OCR gates inapplicable when those operations were not requested; distinguish basic checks, full textual review, and rendered validation.
+7. For mathematical or scientific books, read [references/math-and-formulas.md](references/math-and-formulas.md) before extraction and the pilot. Treat the rendered page as the authority for notation when the PDF text layer is ambiguous.
+8. Before final delivery, apply the relevant gates in [references/quality-gates.md](references/quality-gates.md). Mark translation/OCR gates inapplicable when those operations were not requested; distinguish basic checks, full textual review, and rendered validation.
 
 ## Non-negotiable invariants
+
+For device-sized PDF publication, mathematical rendering, SVG reuse, or PDF bookmark repairs, also read [references/pdf-publication.md](references/pdf-publication.md). Semantic heading review must precede both the printed TOC and reader bookmarks; successful links alone do not validate a TOC.
 
 Source approval, model review, context hashes, and visual localization below govern translation work. Standalone ebook maintenance preserves the source content and follows its own correction/structure checks; it does not imply retranslation or localization.
 

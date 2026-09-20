@@ -31,6 +31,13 @@ For standalone ebook maintenance, translation source-approval, OCR, pilot, model
 - Every accepted external-review correction is source-adjudicated and replayable; the old bad pattern is absent from the rebuilt output.
 - The full bounded revision chain is retained, and no configured model or tool was silently substituted or downloaded.
 
+## Mathematics, when present
+
+- Every displayed equation in the selected scope has a stable source page/block anchor and source-render evidence; extraction ambiguity is recorded rather than guessed.
+- Target equations preserve variable case, Greek letters, subscripts/superscripts, accents, bold/vector notation, operators, brackets, fractions, summation/product limits, and equation numbers as verified against rendered source pages.
+- Equation references point to the correct retained labels; a label/count check is followed by visual comparison of the expressions, including representative inline notation and all extraction-risk formulas.
+- LaTeX or MathML parses/renders in the intended output. Unresolved formula transcription or rendering defects block publication and are reported for the pilot.
+
 ## Pilot and knowledge baseline
 
 - Pilot scope is recorded as actual pages or explicit block IDs and includes representative project risks.
@@ -59,6 +66,8 @@ For standalone ebook maintenance, translation source-approval, OCR, pilot, model
 - Visual IDs, alt text, image files, and visual-index links resolve.
 
 ## EPUB
+
+For PDF output, apply [pdf-publication.md](pdf-publication.md), especially semantic TOC/parent checks, final-page destinations, formula-tag overlap, SVG internal clipping, embedded fonts and explicit original-page index labeling. For either output, navigation targets resolving successfully is insufficient: code comments and translation work notes must not masquerade as chapters.
 
 - `mimetype` is first and stored uncompressed.
 - Container, OPF, spine, nav, XHTML, href, and src targets validate.
