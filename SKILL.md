@@ -39,6 +39,8 @@ Source approval, model review, context hashes, and visual localization below gov
 - A clean build and zero regex findings are necessary but not sufficient: visually inspect every unusual layout class and source-check sampled seams, notes, quotations, numbers, headings, front matter, appendices, and end matter.
 - A project-specific correction belongs in that project's repair/config files, not in this skill's generic defaults.
 
+- Before removing editorial material, preserve any adjacent prose and inline math sharing its node; verify retained content in the final output. Figure counts do not prove figure identity, and an audit suggestion is not authority to change source notation. See the source-based repair rules in the references below.
+
 ## Default operating policy
 
 - Work locally unless the user requests another service.

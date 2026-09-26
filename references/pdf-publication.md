@@ -8,6 +8,8 @@ Review the heading inventory before rendering. Separate real chapters/sections f
 
 Keep code/comment translations as ordinary prose or code when they remain useful; do not delete them merely to clean the TOC. Remove redundant editorial label lists or duplicate table transcriptions only after confirming the retained figure/table carries their information. Record removals by stable source ID. Move a caption with its complete inline math children; flattening it to text destroys notation.
 
+A paragraph beginning with “图内文字” may also contain real prose after a newline because Markdown merged the blocks. Do not delete the entire paragraph or its following list by prefix alone. Verify the boundary, detach only the editorial span, and preserve trailing text, inline math, links and element tails in order. Not every newline ends the label list: multiline labels need source-based boundaries. Route EPUB assembly and PDF cleanup through the same repair where they share this failure. Check all matching locations, not just the reported page; retain one project regression check for recovered prose spans and math IDs in the rebuilt output, with no duplicate insertion on rerun.
+
 ## Device layout
 
 Record physical dimensions and aspect ratio, body font size, margins and paragraph-class indentation. If only diagonal is known, state the assumed aspect ratio. Pixels = inches × device ppi; vector PDF content has no fixed image ppi. Check raster figures at their placed size, not only the source rendering dpi. A 300 dpi extraction cannot recover detail absent from a scanned source.
@@ -24,9 +26,13 @@ Inspect the installed renderer's DOM before selecting classes. KaTeX releases ca
 
 Prefer meaningful multiline breaks over excessive shrinking. Preserve every term, operator and grouping in reflow overrides and source-check the changed expressions. Record minimum rendered size and inspect the smallest formulas at target viewing scale. Counts and parsing success cannot establish symbolic accuracy.
 
+Bind each reflow override to a stable equation ID plus its expected label or source fingerprint; stop if that expectation changes. Apply print-only line breaks at rendering time while keeping canonical TeX/MathML unchanged. After a layout-only repair, compare preserved MathML nodes and untouched asset bytes with the input; after a content repair, allow only the adjudicated changes. Report the base formula size separately from smaller scripts/fractions and avoid treating a book-specific minimum as a universal readability threshold.
+
 ## SVG and tables
 
 Prefer author-provided vectors where authorized. Localize editable labels while preserving mathematical symbols, geometry and data. Text may be converted to paths; a search yielding no English text does not prove full translation. Visually inspect axes, legends and boundaries. A loaded image with a valid naturalWidth can still crop tick labels inside its SVG viewBox. Repair the canvas extent or layout based on visible evidence without stretching or changing data.
+
+Verify figure identity against the selected edition: maintain figure ID → source page/caption → source asset/hash → localized asset/placement. Similar filenames, extraction order and matching counts can still associate the wrong graph with a caption. Compare panels, axes, plotted curves, arrows and network topology; inspect rendered contact sheets for changed mappings. Recheck an older Chinese figure before reuse because captions, panel order or content may have changed. Do not use an AI-generated plausible diagram as evidence for missing scientific data; keep required user approval for generated replacements separate from source verification.
 
 For recreated tables, verify every row, column, unit and symbol against the source, and include one authoritative table plus its caption. Follow the user's approval requirement for newly generated images; deterministic table recreation is a separate workflow when authorized. Keep pending assets out of the final build until required approval arrives.
 

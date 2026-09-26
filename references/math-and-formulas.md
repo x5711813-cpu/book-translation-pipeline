@@ -8,6 +8,8 @@ Before translation, inventory displayed equations with stable equation IDs or pa
 
 If an equation cannot be read from the text layer, inspect the rendered page at sufficient resolution and transcribe it to LaTeX or MathML. Do not derive a plausible equation from surrounding prose. Preserve the author's notation, including whether a function uses square or round brackets. Keep original equation numbering and references. Never silently normalize variable case, bold/vector style, Greek letters, subscripts, superscripts, hats/bars, transpose, derivative notation, units, or summation bounds.
 
+Treat an audit's proposed notation “normalization” as a candidate: calligraphic versus double-struck sets and bold versus ordinary variables may reproduce the source exactly. Reject unsupported normalization with a rendered-page reference; record suspected author errors separately from translation errors. Protect literal currency dollar signs from Markdown math parsing without changing their visible text; test the actual parser on a representative currency/math mixture when changing its behavior.
+
 ## Translation and external handoff
 
 Translate explanatory prose and math vocabulary; carry mathematical expressions unchanged in meaning. Give an external translator the source page reference and mark uncertain extracted formulas as non-authoritative. Ask for displayed equations as standalone math blocks with their original labels and inline expressions as inline math. Maintain per-block/page identity and source hashes so returned text can be matched to the approved source snapshot. Treat formula labels and counts as a completeness check, never as proof of symbolic fidelity.
