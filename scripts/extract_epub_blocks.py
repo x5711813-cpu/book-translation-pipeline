@@ -11,11 +11,30 @@ from xml.etree import ElementTree as ET
 from common import load_project, read_json, sha256_text, write_jsonl
 
 
-TEXT_TAGS = {"p", "h1", "h2", "h3", "h4", "li", "blockquote", "figcaption", "td", "th"}
+TEXT_TAGS = {"p", "h1", "h2", "h3", "h4", "h5", "h6", "li", "blockquote", "figcaption", "td", "th"}
 
 
 def local(tag: str) -> str:
     return tag.rsplit("}", 1)[-1]
+
+
+def text_blocks(node, owner=None):
+    """Emit nested block text once, preserving surrounding inline text and tails."""
+    owner = node if local(node.tag) in TEXT_TAGS else owner
+    parts = [node.text or ""]
+    for child in node:
+        if any(local(descendant.tag) in TEXT_TAGS for descendant in child.iter()):
+            text = re.sub(r"\s+", " ", "".join(parts)).strip()
+            if text and owner is not None:
+                yield owner, text
+            parts = []
+            yield from text_blocks(child, owner)
+        else:
+            parts.append("".join(child.itertext()))
+        parts.append(child.tail or "")
+    text = re.sub(r"\s+", " ", "".join(parts)).strip()
+    if text and owner is not None:
+        yield owner, text
 
 
 def main() -> None:
@@ -33,12 +52,8 @@ def main() -> None:
         for href in manifest["spine"]:
             root = ET.fromstring(archive.read(href))
             node_index = 0
-            for node in root.iter():
-                if local(node.tag) not in TEXT_TAGS:
-                    continue
-                text = re.sub(r"\s+", " ", "".join(node.itertext())).strip()
-                if not text:
-                    continue
+            body = next((node for node in root.iter() if local(node.tag) == "body"), root)
+            for node, text in text_blocks(body):
                 node_index += 1
                 kind = "heading" if local(node.tag).startswith("h") else "table" if local(node.tag) in {"td", "th"} else "prose"
                 block_id = f"epub-block-{len(blocks) + 1:06d}"

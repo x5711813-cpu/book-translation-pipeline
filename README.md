@@ -6,13 +6,49 @@
 
 ## 安装
 
-将本仓库复制到 Codex 技能目录：
+建议使用 Python 3.12。文本 PDF 检查使用 `pypdf`；扫描 PDF 使用 `pypdfium2`、Pillow 和本地 RapidOCR。翻译服务使用项目自行配置的 Ollama 兼容 `/api/chat` 接口；本仓库不下载模型。图表重绘需要本机中文字体，或在视觉配置中指定 `font` 与 `font_bold`。
+
+在 PowerShell 中安装依赖，并将仓库复制到 Codex 技能目录：
 
 ```powershell
-Copy-Item -Recurse -Force book-translation-pipeline "$env:USERPROFILE\.codex\skills\book-translation-pipeline"
+git clone https://github.com/x5711813-cpu/book-translation-pipeline.git
+cd book-translation-pipeline
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+$skillDir = "$env:USERPROFILE\.codex\skills\book-translation-pipeline"
+New-Item -ItemType Directory -Force $skillDir | Out-Null
+Copy-Item -Force SKILL.md $skillDir
+Copy-Item -Recurse -Force agents,assets,references,scripts $skillDir
 ```
 
-重新启动或刷新 Codex 后，可显式调用 `$book-translation-pipeline`；符合描述的整书翻译任务也可自动触发。
+安装后可继续使用克隆目录中的 `.venv` 运行脚本。重新启动或刷新 Codex 后，可显式调用 `$book-translation-pipeline`；符合描述的整书翻译任务也可自动触发。
+
+在 macOS/Linux 上以 `python3.12 -m venv .venv` 创建环境，并用 `.venv/bin/python` 运行下面的命令。脚本处理的输入书籍应有合法使用权；本仓库不包含书籍内容。
+
+## 最小使用示例
+
+对已有 EPUB 做只读结构检查，不需要翻译模型：
+
+```powershell
+.\.venv\Scripts\python.exe scripts/ebook_tool.py audit --help
+.\.venv\Scripts\python.exe scripts/ebook_tool.py audit "C:\books\input.epub" --output "C:\books\audit.json"
+```
+
+翻译 PDF 时，先初始化并检查来源，再编辑项目中的 `project.json` 配置章节和本地模型。扫描页才运行 OCR，随后重建语义块、解决边界、批准源版本、试译与审校，最后构建及审计。每一步的参数可用相应脚本的 `--help` 查看；完整顺序见 [翻译流程](references/workflow.md)，章节字段见 [数据契约](references/schemas.md#sections)。
+
+```powershell
+.\.venv\Scripts\python.exe scripts/init_project.py "C:\books\project" --source "C:\books\input.pdf" --title "示例书名" --model "your-local-model"
+.\.venv\Scripts\python.exe scripts/inspect_source.py "C:\books\project"
+.\.venv\Scripts\python.exe scripts/ocr_pdf.py "C:\books\project"
+.\.venv\Scripts\python.exe scripts/build_blocks.py "C:\books\project"
+.\.venv\Scripts\python.exe scripts/resolve_boundaries.py "C:\books\project" --dry-run
+.\.venv\Scripts\python.exe scripts/approve_source.py "C:\books\project"
+.\.venv\Scripts\python.exe scripts/translate_blocks.py "C:\books\project" --pilot
+.\.venv\Scripts\python.exe scripts/build_epub.py "C:\books\project"
+.\.venv\Scripts\python.exe scripts/audit_project.py "C:\books\project"
+```
+
+如果 `--dry-run` 列出待处理边界，先按 [人工或模型判定说明](references/workflow.md#3-reconstruct-the-source-book) 解决，再重建并批准源版本。`build_epub.py` 检查源批准状态、译文状态与缓存元数据；它生成的构建记录只表示文件已构建，最终交付还需 `audit_project.py` 和人工内容、版式检查。已有 EPUB 的独立整理见 [电子书整理流程](references/ebook-maintenance.md)。
 
 ## 仓库内容
 
@@ -32,11 +68,15 @@ Copy-Item -Recurse -Force book-translation-pipeline "$env:USERPROFILE\.codex\ski
 ```powershell
 python scripts/test_audit_manuscript.py
 python scripts/test_ebook_tool.py
+python scripts/test_translation_contracts.py
+python scripts/test_pipeline_repairs.py
 python scripts/audit_manuscript.py --help
 python path\to\skill-creator\scripts\quick_validate.py .
 ```
 
 `audit_manuscript.py` 默认只让高置信度错误阻断交付；使用 `--strict` 时，警告与风格候选也会产生非零退出码。候选项必须联系上下文研判，不能为了清零报告而机械改写正文。
+
+本仓库按 [MIT 许可证](LICENSE) 开源。OCR 缓存依赖来源、页码、参数、脚本版本和输出文件哈希。复杂公式、多栏、注释、图表与视觉排版仍需人工检查；自动测试与基础 EPUB 审计不能代替逐页出版验收。
 
 ## 设计来源
 

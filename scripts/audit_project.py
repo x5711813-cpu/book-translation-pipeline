@@ -1,43 +1,24 @@
 from __future__ import annotations
 
 import argparse
-import json
-import posixpath
 import re
 import zipfile
 from pathlib import Path
-from xml.etree import ElementTree as ET
+from xml.parsers.expat import ExpatError
 
-from common import load_project, read_json, read_jsonl, sha256_file, sha256_text, write_json
-from translate_blocks import (KIND_POLICIES, REVIEW, SYSTEM, configured_model,
-                              context_package, load_approved_blocks, load_knowledge)
+from common import load_project, read_json, read_jsonl, sha256_file, write_json
+from translate_blocks import load_approved_blocks, stale_translation_ids
+from ebook_tool import Book, audit
 
 
 CONTAMINATION = re.compile(r"<think>|</think>|作为AI|我无法翻译|system prompt|```", re.I)
 
 
 def audit_epub(path: Path) -> list[str]:
-    errors = []
-    with zipfile.ZipFile(path) as archive:
-        names = archive.namelist()
-        if not names or names[0] != "mimetype" or archive.getinfo("mimetype").compress_type != zipfile.ZIP_STORED:
-            errors.append("EPUB mimetype must be first and uncompressed")
-        for name in names:
-            if name.endswith((".xhtml", ".opf", ".xml")):
-                try:
-                    root = ET.fromstring(archive.read(name))
-                except ET.ParseError as error:
-                    errors.append(f"Invalid XML {name}: {error}")
-                    continue
-                base = posixpath.dirname(name)
-                for node in root.iter():
-                    for attribute in ("href", "src"):
-                        target = node.attrib.get(attribute, "").split("#", 1)[0]
-                        if target and ":" not in target and not target.startswith("#"):
-                            resolved = posixpath.normpath(posixpath.join(base, target))
-                            if resolved not in names:
-                                errors.append(f"Broken {attribute} in {name}: {target}")
-    return errors
+    try:
+        return audit(Book(path))["errors"]
+    except (ValueError, KeyError, IndexError, ExpatError, zipfile.BadZipFile) as error:
+        return [f"Invalid EPUB: {error}"]
 
 
 def main() -> None:
@@ -77,33 +58,7 @@ def main() -> None:
         warnings.append(f"Historical translation rows outside current source: {len(orphan_ids)} (retained)")
     translations = {key: item for key, item in translations.items() if key in current_ids}
     missing = [item["block_id"] for item in blocks if item.get("boundary_status") == "READY" and item["block_id"] not in translations]
-    knowledge, knowledge_hash = load_knowledge(project_dir, config)
-    translator = configured_model(config, "translator")
-    reviewer_model = configured_model(config, "reviewer")
-    translator_hash = sha256_text(json.dumps(translator, sort_keys=True))
-    reviewer_hash = sha256_text(json.dumps(reviewer_model, sort_keys=True))
-    review_prompt_hash = sha256_text(REVIEW)
-    stale = []
-    for index, block in enumerate(blocks):
-        record = translations.get(block["block_id"])
-        if not record:
-            continue
-        kind = block.get("kind", "prose")
-        prompt_hash = sha256_text(SYSTEM + "\nBLOCK POLICY: " + KIND_POLICIES.get(kind, KIND_POLICIES["prose"]))
-        package = context_package(blocks, index, translations, source_revision, knowledge, config)
-        context_hash = sha256_text(json.dumps(package, ensure_ascii=False, sort_keys=True))
-        expected = {
-            "source_sha256": block.get("source_sha256"),
-            "source_revision": source_revision,
-            "context_sha256": context_hash,
-            "knowledge_sha256": knowledge_hash,
-            "model_config_sha256": translator_hash,
-            "reviewer_model_config_sha256": reviewer_hash,
-            "prompt_sha256": prompt_hash,
-            "review_prompt_sha256": review_prompt_hash,
-        }
-        if any(record.get(key) != value for key, value in expected.items()):
-            stale.append(block["block_id"])
+    stale = stale_translation_ids(project_dir, config, blocks, source_revision, translations)
     review = [key for key, item in translations.items() if item.get("status") != "PASS"]
     contaminated = [key for key, item in translations.items() if CONTAMINATION.search(item.get("translation", ""))]
     if missing:

@@ -12,6 +12,7 @@ import zipfile
 from pathlib import Path
 
 from common import load_project, read_json, read_jsonl, sha256_file, write_json
+from translate_blocks import load_approved_blocks, stale_translation_ids
 
 
 def xhtml(title: str, body: str, lang: str) -> str:
@@ -49,7 +50,9 @@ def main() -> None:
     args = parser.parse_args()
     project_dir = args.project.resolve()
     config = load_project(project_dir)
-    blocks = read_jsonl(project_dir / "source" / "blocks.jsonl")
+    blocks, source_revision = load_approved_blocks(project_dir, config)
+    if not blocks or any(block.get("boundary_status") != "READY" for block in blocks):
+        raise ValueError("Source must contain only resolved READY blocks before building")
     translations = {item["block_id"]: item for item in read_jsonl(project_dir / "translations" / "translations.jsonl")}
     missing = [block["block_id"] for block in blocks if block.get("boundary_status") == "READY" and block["block_id"] not in translations]
     current_ids = {block["block_id"] for block in blocks}
@@ -59,6 +62,9 @@ def main() -> None:
     review = [key for key, item in translations.items() if key in current_ids and item.get("status") != "PASS"]
     if missing:
         raise RuntimeError(f"Missing translations: {missing[:20]}")
+    stale = stale_translation_ids(project_dir, config, blocks, source_revision, translations)
+    if stale:
+        raise RuntimeError(f"Stale translations; translate the approved source again: {stale[:20]}")
     if review and not args.allow_review:
         raise RuntimeError(f"Translations still need review: {review[:20]}")
 
@@ -143,7 +149,7 @@ def main() -> None:
         archive.writestr("mimetype", "application/epub+zip", compress_type=zipfile.ZIP_STORED)
         for name, value in files.items():
             archive.writestr(name, value.encode("utf-8") if isinstance(value, str) else value, compress_type=zipfile.ZIP_DEFLATED)
-    write_json(output.with_suffix(".build.json"), {"status": "PASS", "epub": str(output), "sha256": sha256_file(output), "chapters": len(chapter_files), "visuals": len(visual_data), "orphan_translation_ids": orphan_ids})
+    write_json(output.with_suffix(".build.json"), {"status": "REVIEW" if review else "BUILT", "source_revision": source_revision, "epub": str(output), "sha256": sha256_file(output), "chapters": len(chapter_files), "visuals": len(visual_data), "orphan_translation_ids": orphan_ids})
     print(output)
 
 

@@ -1,0 +1,4 @@
+pypdf>=5,<7
+Pillow>=10,<13
+pypdfium2>=4,<6
+rapidocr_onnxruntime>=1.4,<2

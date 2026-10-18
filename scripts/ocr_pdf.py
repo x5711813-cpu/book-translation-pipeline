@@ -4,9 +4,10 @@ import argparse
 import statistics
 import subprocess
 import sys
+from importlib.metadata import version
 from pathlib import Path
 
-from common import load_project, write_json
+from common import load_project, read_json, sha256_file, sha256_text, write_json
 
 
 def rapid_engine():
@@ -61,8 +62,10 @@ def main() -> None:
     manifest_path = project_dir / "source" / "source-manifest.json"
     if not manifest_path.exists():
         raise FileNotFoundError("Run inspect_source.py first")
-    from common import read_json
     manifest = read_json(manifest_path)
+    source_hash = sha256_file(source)
+    if source_hash != manifest.get("source_sha256"):
+        raise ValueError("Source changed; run inspect_source.py again before OCR")
     document = pdfium.PdfDocument(source)
     if args.all:
         selected = list(range(1, len(document) + 1))
@@ -77,11 +80,27 @@ def main() -> None:
     else:
         selected = manifest.get("weak_pages", [])
 
-    engine = rapid_engine()
+    if any(page < 1 or page > len(document) for page in selected):
+        raise ValueError("OCR page numbers must be within the PDF page range")
+    engine = None
     scale = float(config["ocr"].get("render_scale", 4.0))
     threshold = float(config["ocr"].get("confidence_threshold", 0.9))
     reports = []
-    for page_no in selected:
+    signature = (source_hash, scale, threshold, version("rapidocr_onnxruntime"), version("pypdfium2"), sha256_file(Path(__file__)))
+    for page_no in dict.fromkeys(selected):
+        record_path = project_dir / "source" / "pages" / f"page-{page_no:04d}.ocr.json"
+        text_path = record_path.with_suffix(".txt")
+        image_path = project_dir / "source" / "images" / f"page-{page_no:04d}.png"
+        cache_key = sha256_text(repr((signature, page_no)))
+        record = read_json(record_path) if record_path.exists() else {}
+        if (config["ocr"].get("cache", True) and record.get("cache_key") == cache_key
+                and text_path.exists() and image_path.exists()
+                and sha256_file(text_path) == record.get("text_sha256")
+                and sha256_file(image_path) == record.get("image_sha256")):
+            reports.append({key: record[key] for key in ("page", "mean_confidence", "low_confidence_regions", "suspicious_line_gaps", "status")})
+            print(f"page {page_no}: cached {record['status']}")
+            continue
+        engine = engine or rapid_engine()
         page = document[page_no - 1]
         image = page.render(scale=scale).to_pil().convert("RGB")
         image_path = project_dir / "source" / "images" / f"page-{page_no:04d}.png"
@@ -107,7 +126,8 @@ def main() -> None:
             "status": "REVIEW" if low or gaps or not regions else "PASS",
             "engine_timing": elapsed,
         }
-        write_json(project_dir / "source" / "pages" / f"page-{page_no:04d}.ocr.json", record)
+        record.update(cache_key=cache_key, text_sha256=sha256_file(text_path), image_sha256=sha256_file(image_path))
+        write_json(record_path, record)
         reports.append({key: record[key] for key in ("page", "mean_confidence", "low_confidence_regions", "suspicious_line_gaps", "status")})
         print(f"page {page_no}: {record['status']} confidence={record['mean_confidence']}")
     write_json(project_dir / "reports" / "ocr-report.json", {"provider": "rapidocr", "pages": reports})

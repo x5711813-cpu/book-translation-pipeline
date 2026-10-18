@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from common import sha256_text, write_json, write_jsonl
+from common import sha256_file, sha256_text, write_json, write_jsonl
 from translate_blocks import approved_items, context_package, load_approved_blocks, pilot_block_ids, relevant_items
 
 
@@ -68,7 +68,7 @@ class TranslationContractsTest(unittest.TestCase):
             (project / "source").mkdir()
             blocks = [block("b1", 1, "Source text.")]
             write_jsonl(project / "source" / "blocks.jsonl", blocks)
-            write_json(project / "source" / "source-manifest.json", {"source_sha256": "source"})
+            write_json(project / "source" / "source-manifest.json", {"source_sha256": sha256_file(Path(__file__))})
             script = Path(__file__).with_name("approve_source.py")
             subprocess.run([sys.executable, str(script), str(project)], check=True, capture_output=True, text=True)
             loaded, revision = load_approved_blocks(project, {"workflow": {"require_source_approval": True}})
@@ -87,7 +87,7 @@ class TranslationContractsTest(unittest.TestCase):
             ], check=True, capture_output=True, text=True)
             blocks = [block("b1", 1, "one"), block("b2", 1, "two"), block("b3", 2, "three")]
             write_jsonl(project / "source" / "blocks.jsonl", blocks)
-            write_json(project / "source" / "source-manifest.json", {"source_sha256": "source"})
+            write_json(project / "source" / "source-manifest.json", {"source_sha256": sha256_file(Path(__file__))})
             approve = Path(__file__).with_name("approve_source.py")
             subprocess.run([sys.executable, str(approve), str(project)], check=True, capture_output=True, text=True)
             config_path = project / "project.json"

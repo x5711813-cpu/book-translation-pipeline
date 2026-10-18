@@ -117,7 +117,7 @@ def main() -> None:
     project_dir = args.project.resolve()
     path = project_dir / "visuals" / "visuals.json"
     payload = read_json(path)
-    defaults = find_font(project_dir)
+    defaults = None
     output_dir = project_dir / "visuals" / "localized"
     output_dir.mkdir(parents=True, exist_ok=True)
     rendered = 0
@@ -125,7 +125,9 @@ def main() -> None:
         spec = visual.get("render")
         if not spec:
             continue
-        fonts = (spec.get("font", defaults[0]), spec.get("font_bold", defaults[1]))
+        if not spec.get("font") or not spec.get("font_bold"):
+            defaults = defaults or find_font(project_dir)
+        fonts = (spec.get("font") or defaults[0], spec.get("font_bold") or defaults[1])
         kind = spec.get("type")
         if kind == "table":
             image = render_table(spec, fonts)

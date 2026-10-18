@@ -98,6 +98,11 @@ def load_approved_blocks(project: Path, config: dict) -> tuple[list[dict], str]:
     manifest_path = project / "source" / "source-manifest.json"
     if sha256_file(manifest_path) != approval.get("source_manifest_sha256"):
         raise ValueError(f"Source manifest changed after approval {revision}; approve a new revision")
+    if sha256_file(project / "source" / "blocks.jsonl") != approval.get("blocks_sha256"):
+        raise ValueError("Working blocks changed after approval; review and approve a new revision")
+    source_path = config.get("source", {}).get("path")
+    if source_path and sha256_file(Path(source_path)) != approval.get("source_sha256"):
+        raise ValueError("Original source changed after approval; extract and approve again")
     blocks = read_jsonl(blocks_path)
     if len(blocks) != approval.get("block_count"):
         raise ValueError(f"Approved block count mismatch for {revision}")
@@ -190,6 +195,35 @@ def pilot_block_ids(blocks: list[dict], workflow: dict) -> set[str]:
         return {block["block_id"] for block in blocks if any(origin.get("page") in allowed for origin in block.get("provenance", []))}
     fallback = int(workflow.get("pilot_blocks", 20))
     return {block["block_id"] for block in blocks[:fallback]}
+
+
+def translation_metadata(blocks, index, translations, revision, knowledge, knowledge_hash, config):
+    block = blocks[index]
+    kind = block.get("kind", "prose")
+    package = context_package(blocks, index, translations, revision, knowledge, config)
+    return {
+        "source_sha256": block.get("source_sha256"),
+        "source_revision": revision,
+        "context_sha256": sha256_text(json.dumps(package, ensure_ascii=False, sort_keys=True)),
+        "knowledge_sha256": knowledge_hash,
+        "model_config_sha256": sha256_text(json.dumps(configured_model(config, "translator"), sort_keys=True)),
+        "reviewer_model_config_sha256": sha256_text(json.dumps(configured_model(config, "reviewer"), sort_keys=True)),
+        "prompt_sha256": sha256_text(SYSTEM + "\nBLOCK POLICY: " + KIND_POLICIES.get(kind, KIND_POLICIES["prose"])),
+        "review_prompt_sha256": sha256_text(REVIEW),
+    }
+
+
+def stale_translation_ids(project: Path, config: dict, blocks: list[dict], source_revision: str, translations: dict) -> list[str]:
+    knowledge, knowledge_hash = load_knowledge(project, config)
+    stale = []
+    for index, block in enumerate(blocks):
+        record = translations.get(block["block_id"])
+        if record is None:
+            continue
+        expected = translation_metadata(blocks, index, translations, source_revision, knowledge, knowledge_hash, config)
+        if any(record.get(key) != value for key, value in expected.items()):
+            stale.append(block["block_id"])
+    return stale
 
 
 def main() -> None:

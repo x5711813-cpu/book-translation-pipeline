@@ -51,6 +51,17 @@ Source approval, model review, context hashes, and visual localization below gov
 - Stop automatic revision after the configured limit and report unresolved items; do not loop indefinitely.
 - Preserve originals and write generated artifacts to a separate project directory.
 
+## Publication version numbers
+
+Use software-style `MAJOR.MINOR.PATCH` versions for translation deliverables, such as `1.2.1`. This is the translated publication's version, separate from the source book's edition, publication year, and this skill's own version.
+
+- Increment **PATCH** for routine corrections: missing prose, mistranslations, typos, formulas, figure mismatches, TOC links, or local layout fixes (`1.2.1` → `1.2.2`). Severity alone does not make a localized correction a major release.
+- Increment **MINOR**, resetting PATCH to zero, for substantial additions or improvements within the same overall edition, such as adding appendices or revising typography across the book (`1.2.2` → `1.3.0`).
+- Increment **MAJOR**, resetting MINOR and PATCH to zero, only for a major overhaul: extensive retranslation, structural reorganization, or adopting a substantially different source edition (`1.3.0` → `2.0.0`). An ordinary repair or rebuild must not increment MAJOR.
+- Continue the project's recorded version. If no numeric version exists, use `1.0.0` for the next accepted release and record the preceding named artifact as its baseline; do not invent historical versions or rename old deliveries unless requested. Rebuilding unchanged content does not increment the version.
+- Put the version in filenames and the publication's edition information; keep it consistent with the delivery report. Use names such as `书名-v1.2.1-6英寸.pdf`, `书名-v1.2.1-10.3英寸.pdf`, and `书名-v1.2.1.epub`. Formats and device variants in the same release share a version. Dates or labels such as “修正版”“最终版” do not replace numeric versions.
+- Preserve previous releases. In the project's existing revision records, record the new and previous versions, release date, change summary, source edition/hash, output files/hashes, and validation result. Assign the next version according to the actual change scope before delivery.
+
 ## Reusable commands
 
 Initialize a project with `scripts/init_project.py`, inspect the source with `scripts/inspect_source.py`, OCR scanned PDF pages with `scripts/ocr_pdf.py`, extract configured visuals with `scripts/extract_visuals.py`, render data-driven Chinese charts/tables with `scripts/render_visuals.py`, reconstruct blocks with `scripts/build_blocks.py`, adjudicate ambiguous seams with `scripts/resolve_boundaries.py`, approve an immutable source revision with `scripts/approve_source.py`, translate/review with `scripts/translate_blocks.py`, build with `scripts/build_epub.py`, generate contextual Markdown proofreading candidates with `scripts/audit_manuscript.py`, and run project/EPUB invariants with `scripts/audit_project.py`.
