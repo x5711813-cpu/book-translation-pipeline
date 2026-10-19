@@ -1,5 +1,7 @@
 # Book Translation Pipeline
 
+**语言：中文 | [English](README.en.md)**
+
 面向整本书翻译、审校与 EPUB 交付的 Codex 技能。支持文本 PDF、扫描 PDF 与 EPUB，强调可恢复处理、段落重建、注释和索引完整性、中文出版校对以及可审计的本地模型工作流。
 
 也支持对已有电子书独立执行**校对、分级目录生成/修复、格式重排**，无需重跑翻译。使用方法与边界见 [电子书整理流程](references/ebook-maintenance.md)。例如：“校对这本 EPUB，修复目录并统一正文和脚注排版。”
